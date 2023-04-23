@@ -11,8 +11,13 @@ body {
   color: #212121;
   line-height: 1.5;
 
-  margin-left: 0;
-  margin-right: 0;
+  margin: 0;
+
+  background-image: linear-gradient(
+    -100deg,
+    rgba(247, 249, 89, 0.9) 10%,
+    rgba(250, 230, 75, 0.8) 90%
+  );
 }
 
 .search-form {
@@ -23,7 +28,7 @@ body {
 
   margin-bottom: 10px;
 
-  background-color: aqua;
+  background-color: rgb(73, 87, 247);
   height: 45px;
 }
 
@@ -31,24 +36,67 @@ body {
   width: 250px;
 
   font-size: 20px;
+
+  border-radius: 5px;
 }
 
 .button {
   font-size: 20px;
+  border-radius: 5px;
 }
 
 .gallery {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 15px;
+  gap: 25px;
+}
+
+.photo-card {
+  min-width: 320px;
+  flex-basis: calc((100% - 80px) / 4);
+  border: 2px solid rgb(0, 0, 0);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.photo-card:hover,
+.photo-card:focus {
+  transform: scale(1.05);
+}
+
+img {
+  display: block;
+  object-fit: cover;
 }
 
 .info {
   display: flex;
+  justify-content: center;
   gap: 10px;
 }
 
+.load-more-container {
+  display: flex;
+  justify-content: center;
+}
+
 .load-more {
+  width: 200px;
+
+  margin-top: 30px;
+  margin-bottom: 30px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+
   font-size: 20px;
+
+  border: none;
+  border-radius: 5px;
+  background-color: #f38338;
+
+  cursor: pointer;
 }

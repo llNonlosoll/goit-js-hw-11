@@ -7,33 +7,46 @@ import { cleanMarkup } from './js/cleanMarkup';
 // Імпорт Notify
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
+// Імпорт debounce
+import debounce from 'lodash.debounce';
+
+// Змінна для зберігання часу затримки
+const DEBOUNCE_DELAY = 1000;
+
 // Додаємо слухачів подій
 refs.form.addEventListener('submit', onSubmit);
+refs.form.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
 refs.loadMore.addEventListener('click', onClick);
 
-let page = 8;
+// Створюємо необхідні додаткові змінні
+let page = 1;
 let name = null;
 let totalPages = 0;
 const per_page = 40;
 
+// Робимо кнопку "loadMore" невідимою за замовченням
 refs.loadMore.setAttribute('hidden', true);
 
 //Функція для пошуку зображень при "submit"
 function onSubmit(event) {
   event.preventDefault();
   name = refs.form.elements.searchQuery.value.trim();
+  page = 1;
 
   fetchImages(name).then(images => {
     totalPages = Math.ceil(images.totalHits / per_page);
 
-    if (images.totalHits === 0) {
-      Notify.info(
+    if (totalPages > 1) {
+      refs.loadMore.removeAttribute('hidden');
+    }
+
+    if (images.hits.length === 0) {
+      Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
     } else if (images.hits.length > 0) {
       cleanMarkup(refs.gallery);
       refs.gallery.innerHTML = createMarkup(images);
-      refs.loadMore.removeAttribute('hidden');
     }
   });
 }
@@ -52,6 +65,13 @@ function onClick() {
     cleanMarkup(refs.gallery);
     refs.gallery.innerHTML = createMarkup(images);
   });
+}
+
+function onInput(event) {
+  if (event.target.value === '') {
+    cleanMarkup(refs.gallery);
+    refs.loadMore.setAttribute('hidden', true);
+  }
 }
 
 // function onInput() {
