@@ -4,12 +4,20 @@ import axios from 'axios';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 // Функція запиту на сервер
-
-const API_KEY = '35695662-2f1aa19a2cfb13ed0e26200f2';
-
 async function fetchImages(name, page) {
-  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${name}
-  &image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`;
+  const API_KEY = '35695662-2f1aa19a2cfb13ed0e26200f2';
+
+  const searchParams = new URLSearchParams({
+    key: `${API_KEY}`,
+    q: `${name}`,
+    image_type: 'photo',
+    orientation: `horizontal`,
+    safesearch: true,
+    page: page,
+    per_page: 40,
+  });
+
+  const url = `https://pixabay.com/api/?${searchParams}`;
 
   const response = await axios.get(`${url}`);
 
