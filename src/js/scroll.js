@@ -6,7 +6,7 @@ function onScroll() {
     .firstElementChild.getBoundingClientRect();
 
   window.scrollBy({
-    top: 0,
+    top: cardHeight * 0,
     behavior: 'smooth',
   });
 }
