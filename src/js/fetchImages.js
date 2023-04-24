@@ -14,7 +14,7 @@ async function fetchImages(name, page) {
   const response = await axios.get(`${url}`);
 
   if (response.status === 404) {
-    Notify.failure('Oops, there is no country with that name');
+    Notify.failure('Oops, something went wrong');
     throw new Error(response.status);
   }
 

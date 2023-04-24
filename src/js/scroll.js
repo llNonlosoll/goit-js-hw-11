@@ -1,14 +1,17 @@
 // Плавне прокручування сторінки
 
-function onScroll() {
+function onRequest() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function onLoadMore() {
   const { height: cardHeight } = document
     .querySelector('.gallery')
     .firstElementChild.getBoundingClientRect();
-
   window.scrollBy({
-    top: cardHeight * 0,
+    top: cardHeight * 2,
     behavior: 'smooth',
   });
 }
 
-export { onScroll };
+export { onRequest, onLoadMore };

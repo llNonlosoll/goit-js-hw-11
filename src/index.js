@@ -1,11 +1,10 @@
-// Варіант з Нескінченним скролом
-
+// Варіант з кнопкою
 // Імпортуємо фунції
 import { refs } from './js/refs';
 import { fetchImages } from './js/fetchImages';
 import { createMarkup } from './js/createMarkup';
 import { cleanMarkup } from './js/cleanMarkup';
-import { onScroll } from './js/scroll';
+import { onRequest, onLoadMore } from './js/scroll';
 import { onSuccess, onFailure, info } from './js/notify';
 
 // Імпорт стилів SimpleLightbox
@@ -22,6 +21,7 @@ const DEBOUNCE_DELAY = 1000;
 // Додаємо слухачів подій
 refs.form.addEventListener('submit', onSubmit);
 refs.form.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
+refs.loadMore.addEventListener('click', onClick);
 
 // Створюємо необхідні додаткові змінні
 let page = 1;
@@ -30,22 +30,15 @@ let totalPages = 0;
 const per_page = 40;
 let simpleLightbox;
 
-// Створюємо необхідні додаткові змінні для нескінченного скролу
-const target = document.querySelector('.js-guard');
-let options = {
-  root: null,
-  rootMargin: '500px',
-  threshold: 1.0,
-};
-let observer = new IntersectionObserver(onLoad, options);
-
 // Робимо кнопку "loadMore" невидимою за замовченням
 refs.loadMore.setAttribute('hidden', true);
 
 //Функція для пошуку зображень при "submit"
 function onSubmit(event) {
   event.preventDefault();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  cleanMarkup(refs.gallery);
+  onRequest();
+  refs.loadMore.setAttribute('hidden', true);
   name = refs.form.elements.searchQuery.value.trim();
   page = 1;
 
@@ -53,17 +46,39 @@ function onSubmit(event) {
     .then(images => {
       totalPages = Math.ceil(images.totalHits / per_page);
 
+      if (totalPages > 1) {
+        refs.loadMore.removeAttribute('hidden');
+      }
+
       if (images.hits.length === 0) {
-        cleanMarkup(refs.gallery);
+        refs.loadMore.setAttribute('hidden', true);
         onFailure();
       } else {
-        cleanMarkup(refs.gallery);
         createMarkup(images);
-        observer.observe(target);
         simpleLightbox = new SimpleLightbox('.gallery a').refresh();
         onSuccess(images.totalHits);
-        onScroll();
       }
+    })
+    .catch(error => {
+      console.log(error);
+    });
+}
+
+// Функція для загрузки наступної сторінки з фото
+function onClick() {
+  page += 1;
+  simpleLightbox.destroy();
+
+  if (page === totalPages) {
+    refs.loadMore.setAttribute('hidden', true);
+    info();
+  }
+
+  fetchImages(name, page)
+    .then(images => {
+      createMarkup(images);
+      simpleLightbox = new SimpleLightbox('.gallery a').refresh();
+      onLoadMore();
     })
     .catch(error => {
       console.log(error);
@@ -71,45 +86,21 @@ function onSubmit(event) {
     });
 }
 
-// Нескінченний скрол
-function onLoad(entries, observer) {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      page += 1;
-      fetchImages(name, page)
-        .then(images => {
-          createMarkup(images);
-          simpleLightbox.destroy();
-          simpleLightbox = new SimpleLightbox('.gallery a').refresh();
-          onScroll();
-          if (page === totalPages) {
-            observer.unobserve(target);
-            info();
-          }
-        })
-        .catch(error => {
-          console.log(error);
-          cleanMarkup(refs.gallery);
-        });
-    }
-  });
-}
-
 //Функція для очистки DOM при порожньому "input"
 function onInput(event) {
   if (event.target.value === '') {
     cleanMarkup(refs.gallery);
-    observer.unobserve(target);
+    refs.loadMore.setAttribute('hidden', true);
   }
 }
 
-// // Варіант з кнопкою
+// // Варіант з Нескінченним скролом
 // // Імпортуємо фунції
 // import { refs } from './js/refs';
 // import { fetchImages } from './js/fetchImages';
 // import { createMarkup } from './js/createMarkup';
 // import { cleanMarkup } from './js/cleanMarkup';
-// import { onScroll } from './js/scroll';
+// import { onRequest, onLoadMore } from './js/scroll';
 // import { onSuccess, onFailure, info } from './js/notify';
 
 // // Імпорт стилів SimpleLightbox
@@ -126,7 +117,6 @@ function onInput(event) {
 // // Додаємо слухачів подій
 // refs.form.addEventListener('submit', onSubmit);
 // refs.form.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
-// refs.loadMore.addEventListener('click', onClick);
 
 // // Створюємо необхідні додаткові змінні
 // let page = 1;
@@ -135,14 +125,23 @@ function onInput(event) {
 // const per_page = 40;
 // let simpleLightbox;
 
+// // Створюємо необхідні додаткові змінні для нескінченного скролу
+// const target = document.querySelector('.js-guard');
+// let options = {
+//   root: null,
+//   rootMargin: '500px',
+//   threshold: 1.0,
+// };
+// let observer = new IntersectionObserver(onLoad, options);
+
 // // Робимо кнопку "loadMore" невидимою за замовченням
 // refs.loadMore.setAttribute('hidden', true);
 
 // //Функція для пошуку зображень при "submit"
 // function onSubmit(event) {
 //   event.preventDefault();
-//   window.scrollTo({ top: 0 });
-//   refs.loadMore.setAttribute('hidden', true);
+//   cleanMarkup(refs.gallery);
+//   onRequest();
 //   name = refs.form.elements.searchQuery.value.trim();
 //   page = 1;
 
@@ -150,55 +149,47 @@ function onInput(event) {
 //     .then(images => {
 //       totalPages = Math.ceil(images.totalHits / per_page);
 
-//       if (totalPages > 1) {
-//         refs.loadMore.removeAttribute('hidden');
-//       }
-
 //       if (images.hits.length === 0) {
-//         cleanMarkup(refs.gallery);
-//         refs.loadMore.setAttribute('hidden', true);
 //         onFailure();
 //       } else {
-//         cleanMarkup(refs.gallery);
 //         createMarkup(images);
+//         observer.observe(target);
 //         simpleLightbox = new SimpleLightbox('.gallery a').refresh();
 //         onSuccess(images.totalHits);
-//         onScroll();
 //       }
 //     })
 //     .catch(error => {
 //       console.log(error);
-//       cleanMarkup(refs.gallery);
 //     });
 // }
 
-// // Функція для загрузки наступної сторінки з фото
-// function onClick() {
-//   page += 1;
-//   simpleLightbox.destroy();
-
-//   if (page === totalPages) {
-//     refs.loadMore.setAttribute('hidden', true);
-//     info();
-//   }
-
-//   fetchImages(name, page)
-//     .then(images => {
-//       createMarkup(images);
-//       simpleLightbox = new SimpleLightbox('.gallery a').refresh();
-//       onScroll();
-//     })
-//     .catch(error => {
-//       console.log(error);
-//       cleanMarkup(refs.gallery);
-//     });
-
+// // Нескінченний скрол
+// function onLoad(entries, observer) {
+//   entries.forEach(entry => {
+//     if (entry.isIntersecting) {
+//       page += 1;
+//       fetchImages(name, page)
+//         .then(images => {
+//           createMarkup(images);
+//           simpleLightbox.destroy();
+//           simpleLightbox = new SimpleLightbox('.gallery a').refresh();
+//           if (page === totalPages) {
+//             info();
+//             observer.unobserve(target);
+//           }
+//         })
+//         .catch(error => {
+//           console.log(error);
+//           cleanMarkup(refs.gallery);
+//         });
+//     }
+//   });
 // }
 
 // //Функція для очистки DOM при порожньому "input"
 // function onInput(event) {
 //   if (event.target.value === '') {
 //     cleanMarkup(refs.gallery);
-//     refs.loadMore.setAttribute('hidden', true);
+//     observer.unobserve(target);
 //   }
 // }
