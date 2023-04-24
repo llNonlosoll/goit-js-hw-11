@@ -3,9 +3,13 @@ import { refs } from './js/refs';
 import { fetchImages } from './js/fetchImages';
 import { createMarkup } from './js/createMarkup';
 import { cleanMarkup } from './js/cleanMarkup';
+import { onScroll } from './js/scroll';
+import { onSuccess, onFailure, info } from './js/notify';
 
-// Імпорт Notify
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
+// Імпорт стилів SimpleLightbox
+import SimpleLightbox from 'simplelightbox';
+// Додатковий імпорт стилів SimpleLightbox
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 // Імпорт debounce
 import debounce from 'lodash.debounce';
@@ -23,83 +27,72 @@ let page = 1;
 let name = null;
 let totalPages = 0;
 const per_page = 40;
+let simpleLightbox;
 
-// Робимо кнопку "loadMore" невідимою за замовченням
+// Робимо кнопку "loadMore" невидимою за замовченням
 refs.loadMore.setAttribute('hidden', true);
 
 //Функція для пошуку зображень при "submit"
 function onSubmit(event) {
   event.preventDefault();
+  window.scrollTo({ top: 0 });
+  refs.loadMore.setAttribute('hidden', true);
   name = refs.form.elements.searchQuery.value.trim();
   page = 1;
 
-  fetchImages(name).then(images => {
-    totalPages = Math.ceil(images.totalHits / per_page);
+  fetchImages(name)
+    .then(images => {
+      totalPages = Math.ceil(images.totalHits / per_page);
 
-    if (totalPages > 1) {
-      refs.loadMore.removeAttribute('hidden');
-    }
+      if (totalPages > 1) {
+        refs.loadMore.removeAttribute('hidden');
+      }
 
-    if (images.hits.length === 0) {
-      Notify.failure(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
-    } else if (images.hits.length > 0) {
+      if (images.hits.length === 0) {
+        cleanMarkup(refs.gallery);
+        refs.loadMore.setAttribute('hidden', true);
+        onFailure();
+      } else {
+        cleanMarkup(refs.gallery);
+        createMarkup(images);
+        onScroll();
+        simpleLightbox = new SimpleLightbox('.gallery a').refresh();
+        onSuccess(images.totalHits);
+      }
+    })
+    .catch(error => {
+      console.log(error);
       cleanMarkup(refs.gallery);
-      refs.gallery.innerHTML = createMarkup(images);
-    }
-  });
+    });
 }
 
+// Функція для загрузки наступної сторінки з фото
 function onClick() {
   page += 1;
+  simpleLightbox.destroy();
 
   if (page === totalPages) {
     refs.loadMore.setAttribute('hidden', true);
-    Notify.info(
-      'We are sorry, but you have reached the end of search results.'
-    );
+    info();
   }
 
-  fetchImages(name, page).then(images => {
-    cleanMarkup(refs.gallery);
-    refs.gallery.innerHTML = createMarkup(images);
-  });
+  fetchImages(name, page)
+    .then(images => {
+      createMarkup(images);
+      simpleLightbox = new SimpleLightbox('.gallery a').refresh();
+    })
+    .catch(error => {
+      console.log(error);
+      cleanMarkup(refs.gallery);
+    });
+
+  onScroll();
 }
 
+//Функція для очистки DOM при порожньому "input"
 function onInput(event) {
   if (event.target.value === '') {
     cleanMarkup(refs.gallery);
     refs.loadMore.setAttribute('hidden', true);
   }
 }
-
-// function onInput() {
-
-// fetchCountries(name)
-//   .then(countries => {
-//     cleanMarkup(refs.list);
-//     cleanMarkup(refs.about);
-//     if (countries.length === 1) {
-//       refs.about.innerHTML = createCountryMarkup(countries);
-//     } else if (countries.length <= 10) {
-//       refs.list.innerHTML = createMarkup(countries);
-//     } else {
-//       Notify.info(
-//         'Too many matches found. Please enter a more specific name.'
-//       );
-//     }
-//   })
-//     .catch(error => {
-//       if (error.message === '404') {
-//         Notify.failure('Sorry, there are no images matching your search query. Please try again.');
-//       }
-//       cleanMarkup(refs.list);
-//       cleanMarkup(refs.about);
-//     });
-// }
-
-// if (name === '') {
-//   cleanMarkup(refs.gallery);
-//   refs.loadMore.setAttribute('hidden', true);
-// }
